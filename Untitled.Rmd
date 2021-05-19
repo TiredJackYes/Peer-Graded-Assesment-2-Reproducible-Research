@@ -1,0 +1,139 @@
+---
+title: "John Hopkins Assignment"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+### About the dataset
+This is something that I am going to add later 
+
+## Synopsis
+
+I split my analysis into two categories as trying to press everything into a single chart would be a much bigger challenge. The first one focuses on impact on health and the second on impact on the economy. I transformed the datasets to keep only the variables I need, summed all observation into one and created a chart from the most harmful events. In the second part I briefly split the dataset to gain most harmful events to both property and crops as I thought that what has the greatest impact on property neccessarily doesnt have on crops. My hypothesis was proven correct as there are twelve events in the final dataset for this part. 
+In the end we can see that Tornados are the most harmful events and you'll see the rest in the graphs. 
+
+## Impact on health
+
+Lets load the packages
+```{r}
+library("data.table")
+library("readxl")
+library("ggplot2")
+```
+
+### Data processing
+```{r}
+StormData <-read.csv("repdata-data-StormData.csv.bz2")
+```
+
+Reading the dataset as a table so I can later manipulate with the data more effectively
+
+```{r}
+Storm_Data <- as.data.table(StormData)
+```
+
+Cleaning the dataset so only variables that are relevant for us will be used. This way we can visalise the data 
+```{r}
+rmcol <- colnames(Storm_Data [, !c("EVTYPE", "FATALITIES", "INJURIES")])
+StormDF <- Storm_Data[, c(rmcol) := NULL]
+```
+
+Calculating each obervation into a sum of all injuries and fatalities that a type of catastrophy has caused
+
+```{r}
+StormDF1 <- StormDF[, .(FATALITIES = sum(FATALITIES), INJURIES = sum(INJURIES)), by = .(EVTYPE)]
+```
+
+Then we must choose only the few events that have caused the most injuries/fatalities 
+
+```{r}
+StormDF1 <- StormDF1[order(-FATALITIES), ]
+StormDF1 <- StormDF1[1:10, ]
+```
+
+Now lets melt the collumns that we dont need to have
+```{r}
+StormDF1 <-  melt(StormDF1, id.vars="EVTYPE", variable.name = "Catastrophy")
+```
+
+
+Not lets plot the graph
+
+First we set how we want the graph to look like
+```{r}
+healthChart <- ggplot(StormDF1, aes(x=reorder(EVTYPE, -value), y=value))
+healthChart = healthChart + geom_bar(stat="identity", aes(fill=Catastrophy), position="dodge")
+```
+
+Now lets set the names
+```{r}
+healthChart = healthChart + ylab("Count") 
+healthChart = healthChart + xlab("Event Type") 
+```
+
+Now for the theme and the angles of x names
+```{r}
+healthChart = healthChart + theme_light() + theme(axis.text.x = element_text(angle=45, hjust=1))
+healthChart = healthChart + ggtitle("Catastrophies that cause the most:") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Results
+
+```{r, echo=FALSE}
+healthChart
+```
+
+Tornados cause by far the highest amount of injuries and are distorting the rest of the data visualisation. There is not a clear correlation between number of fatalities and injuries as we can see in heat, flashflood and flood for example. 
+
+## Impact on economy
+
+First, creating a dataset as a table for later use 
+```{r}
+StormData2 <- as.data.table(StormData)
+```
+
+Designating the variables that we want to use and them removing them
+```{r}
+rmcol2 <- colnames(StormData2[, !c("PROPDMG", "CROPDMG", "EVTYPE")])
+StormDF2 <- StormData2[, c(rmcol2) := NULL]
+```
+
+Calculating the individual observations into sums
+```{r}
+StormDF2.1 <- StormDF2[, .(CROPDMG = sum(CROPDMG), PROPDMG = sum(PROPDMG)), by = .(EVTYPE)]
+```
+
+Splitting it into two datasets and taking only the data which had the greatest property and crop damage values
+```{r}
+StormPROPDMG <- StormDF2.1[order(-PROPDMG)]
+StormPROPDMG <- StormPROPDMG[1:10]
+
+StormCROPDMG <- StormDF2.1[order(-CROPDMG)]
+StormCROPDMG <- StormCROPDMG[1:10]
+```
+
+Binding htme into one dataset again and then melting the multiple collumns into less
+```{r}
+StormDMG <- rbind(StormPROPDMG, StormCROPDMG)
+StormDMG <- melt(StormDMG, id.vars = "EVTYPE", variable.name = "Damage")
+```
+
+Creating the chart just like before
+```{r}
+healthChart2 <- ggplot(StormDMG, aes(x=reorder(EVTYPE, -value), y = value), yaxt = "n")
+healthChart2 = healthChart2 +geom_bar(stat = "identity", aes(fill=Damage), position = "dodge")
+healthChart2 = healthChart2 + ylab("Count")
+healthChart2 = healthChart2 + xlab("Event")
+healthChart2 = healthChart2 + theme_light()
+healthChart2 = healthChart2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+healthChart2 = healthChart2 + ggtitle("Catastrophies that cause the most:") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Results
+```{r}
+healthChart2
+```
+
+The chart captures the 10 most harmful events to property and the 10 most harmful events for crops. 
