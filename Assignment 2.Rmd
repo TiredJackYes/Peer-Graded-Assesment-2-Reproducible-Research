@@ -136,4 +136,4 @@ healthChart2 = healthChart2 + ggtitle("Catastrophies that cause the most:") + th
 healthChart2
 ```
 
-The chart captures the 10 most harmful events to property and the 10 most harmful events for crops. 
+The chart captures the 10 most harmful events to property and the 10 most harmful events for crops and looks nice
